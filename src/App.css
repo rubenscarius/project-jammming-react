@@ -1,0 +1,167 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-image: linear-gradient(#4e0081, #af03f3);
+  height: 100vh;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.header {
+  background-color: #10162F;
+}
+
+.header .title {
+  color: #fff;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.header .title span {
+  color: #0000ff;
+}
+
+.search-container {
+  margin: 50px auto;
+  max-width: 500px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.search-container h2 {
+  text-align: center;
+  color: #fff;
+}
+
+.search-container input {
+  width: 250px;
+  height: 30px;
+  border: none;
+  border-radius: 20px;
+  outline: none;
+  padding: 3px 10px;
+}
+
+.search-container button {
+  width: 200px;
+  height: 36px;
+  border: none;
+  border-radius: 20px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  background-color: #ce6cf5;
+}
+
+.search-container button:hover {
+  cursor: pointer;
+  background-color: #ce6cf5cc;
+}
+
+.search-result-container {
+  min-width: 320px;
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.search-result {
+  min-width: 50%;
+  max-width: 90%;
+  background-color: #10162F77;
+  border-radius: 5px;
+}
+
+.song-container {
+  padding: 10px 15px;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.song-container .song-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.song-container .song-card .song-details {
+  line-height: 25px;
+}
+
+.song-container .song-card .song-details h3 {
+  color: #fff;
+}
+
+.song-container .song-card .song-details p {
+  color: #a0a0a0;
+}
+
+.song-container .song-card .add-icon {
+  color: #0000ff;
+  font-size: 30px;
+}
+
+.song-container .song-card .add-icon:hover {
+  cursor: pointer;
+  color: #0000ff66;
+}
+
+.song-container hr {
+  border: none;
+  height: 1px;
+  background-color: #a0a0a0;
+}
+
+.my-repository {
+  min-width: 40%;
+  max-width: 90%;
+  background-color: #10162F77;
+  border-radius: 5px;
+}
+
+.my-repository .repository-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.my-repository .repository-container button {
+  width: 50%;
+  margin: 20px 0 20px 0;
+  border: none;
+  border-radius: 20px;
+  background-color: #ce6cf5;
+  color: #fff;
+  font-weight: 700;
+  height: 30px;
+}
+
+.my-repository .repository-container button:hover {
+  cursor: pointer;
+  background-color: #af03f3;
+}
+
+@media only screen and (max-width: 950px) {
+  .search-result-container {    
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 20px;
+    justify-content: center;
+  }
+
+  .search-result, .my-repository {
+    margin: 0 auto;
+    width: 90%;
+  }
+
+}
