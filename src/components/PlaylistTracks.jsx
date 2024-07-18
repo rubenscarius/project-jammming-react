@@ -1,6 +1,9 @@
-import { IoIosAddCircleOutline } from "react-icons/io";
+import { IoIosCloseCircleOutline } from "react-icons/io";
+import { useEffect } from "react";
 
-const SongResult = ({track}) => {
+
+function PlaylistTracks({ track }) {
+
     return (
         <div className='song-container'>
             <div className="song-card">
@@ -8,11 +11,11 @@ const SongResult = ({track}) => {
                     <h3>{track.name}</h3> {/*condition for rendering array content*/}
                     <p>{track.artists[0].name}</p>
                 </div>
-                <IoIosAddCircleOutline className="add-icon" />
+                <IoIosCloseCircleOutline />
             </div>
             <hr />
         </div>
     )
 }
 
-export default SongResult
+export default PlaylistTracks

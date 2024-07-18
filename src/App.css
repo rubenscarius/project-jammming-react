@@ -87,6 +87,12 @@ body {
   border-radius: 5px;
 }
 
+.search-result h2 {
+  color: #fff;
+  text-align: center;
+  margin: 20px 0;
+}
+
 .song-container {
   padding: 10px 15px;
   width: 100%;
@@ -156,6 +162,17 @@ body {
 .my-repository .repository-container button:hover {
   cursor: pointer;
   background-color: #af03f3;
+}
+
+.my-repository .repository-container .playlist-name {
+  margin-top: 20px;
+  height: 30px;
+  border: none;
+  outline: none;
+  padding: 10px;
+  border-radius: 20px;
+  background-color: #10162F;
+  color: #fff;
 }
 
 @media only screen and (max-width: 950px) {

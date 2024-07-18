@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { IoIosAddCircleOutline } from "react-icons/io";
-import SongResult from "./components/SongResult";
+import TrackResult from "./components/TrackResult";
+import SearchComponent from "./components/SearchComponent";
+import PlaylistTracks from "./components/PlaylistTracks";
 import './App.css';
 
+const clientId = "7915d847a030465bbaaab9569e7accbc";
 
 const urlStd = 'https://api.spotify.com/v1/';
 const urlToken = 'https://accounts.spotify.com/api/token';
@@ -10,85 +12,132 @@ const urlToken = 'https://accounts.spotify.com/api/token';
 
 function App() {
 
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+
   const [token, setToken] = useState('') // Token state
 
-  // Function for request a token 
-  async function requestAccessToken(url) {
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-          'grant_type': 'client_credentials',
-          'client_id': '7915d847a030465bbaaab9569e7accbc',
-          'client_secret': '514cbd7755d04eac9c5b192aed532a06'
-        })
-      })
-
-      if (!res.ok) {
-        throw new Error(`Erro na requisição: ${res.status}`)
-      }
-
-      const access = await res.json()
-      setToken(access.access_token)
-    }
-
-    catch (e) {
-      console.error(e)
-    }
-  }
-
-  // call requestAccessToken() with the page load
-  useEffect(() => {
-    const requestTokenUrl = urlToken;
-
-    requestAccessToken(requestTokenUrl);
-  }, [])
-
-  const [search, setSearch] = useState(''); // Search query state
+  const [userID, setUserID] = useState('') // Get state for user ID
 
   const [tracks, setTracks] = useState([]); // State for receive a array of the track object response
+
+  const [playlistTracks, setPlaylistTracks] = useState([]); // State for add tracks to user playlist
+
+  // Verified if user is logged in Spotify. If not, call functions to get access 
+  // useEffect is used for render just once
+  useEffect(() => {
+    if (code) {
+      async function getAccessToken(clientId, code) {
+        const verifier = localStorage.getItem("verifier");
+
+        const params = new URLSearchParams();
+        params.append("client_id", clientId);
+        params.append("grant_type", "authorization_code");
+        params.append("code", code);
+        params.append("redirect_uri", "http://localhost:5173/callback");
+        params.append("code_verifier", verifier);
+
+        const result = await fetch(urlToken, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: params
+        });
+
+        const { access_token } = await result.json();
+        setToken(access_token);
+      }
+      getAccessToken(clientId, code);
+    } else {
+      redirectToAuthCodeFlow(clientId);
+    }
+  }, [code, clientId]);
+
+  // Authenticate de user code
+  async function redirectToAuthCodeFlow(clientId) {
+    const verifier = generateCodeVerifier(128); // Call and generate the verifier code
+    const challenge = await generateCodeChallenge(verifier); // Call the generate challenge code for validation
+
+    localStorage.setItem("verifier", verifier); // Storage the varifier code on local satorage
+
+    const params = new URLSearchParams(); // Search params for authentication
+    params.append("client_id", clientId);
+    params.append("response_type", "code");
+    params.append("redirect_uri", "http://localhost:5173/callback");
+    params.append("scope", "user-read-private user-read-email");
+    params.append("code_challenge_method", "S256");
+    params.append("code_challenge", challenge);
+
+    document.location = `https://accounts.spotify.com/authorize?${params.toString()}`;
+  }
+
+  // Generate the verifier code
+  function generateCodeVerifier(length) {
+    let text = '';
+    let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+    for (let i = 0; i < length; i++) {
+      text += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
+    return text;
+  }
+
+  // generate de Code challenge for authentication
+  async function generateCodeChallenge(codeVerifier) {
+    const data = new TextEncoder().encode(codeVerifier);
+    const digest = await window.crypto.subtle.digest('SHA-256', data);
+    return btoa(String.fromCharCode.apply(null, [...new Uint8Array(digest)]))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  }
+  // Get profile data necessary for get user ID
+  async function fetchProfile(token) {
+    const result = await fetch("https://api.spotify.com/v1/me", {
+      method: "GET", headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const userData = await result.json();
+    setUserID(userData.id);
+  }
+
+  useEffect(() => {
+    if (token != '') {
+      fetchProfile(token);
+    }
+  }, [token]);
 
   // Function for fetch data for Spotify API
   async function fetchSpotifyData(url) {
 
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error(`Erro na requisição: ${response.status}`)
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
       }
 
-      const data = await response.json();
+    });
 
-      setTracks(data.tracks.items)
-      
-    }
+    const data = await response.json();
 
-    catch (error) {
-      console.error('Error: ', error);
-    }
+    setTracks(data.tracks.items)
   }
 
   // Function for handling submit form search and call fetchSpotifyData()
-  async function handleSubmit(e) {
+  async function handleSubmit(e, search) {
     e.preventDefault();
 
     if (!search) return;
 
     const searchWithQueryURL = `${urlStd}search?q=${search}&type=track&limit=10`;
 
-    fetchSpotifyData(searchWithQueryURL)
-
-    setSearch('');
+    fetchSpotifyData(searchWithQueryURL);
   }
+
+  // Function for add tracks to tracksPlaylist
+  async function addTrackToPlaylist(track) {
+    setPlaylistTracks((prevTracks) => [...prevTracks, track])
+  };
+
 
   return (
     <div className="container">
@@ -96,40 +145,20 @@ function App() {
         <h1 className="title">Ja<span>mmm</span>ing</h1>
       </div>
 
-      <div className="search-container">
-        <h2>Procure por suas músicas favoritas</h2>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Digite o nome da música..."
-          />
-          <button>Procurar</button>
-        </form>
-      </div>
+      <SearchComponent handleSubmit={handleSubmit} />
 
       <div className="search-result-container">
 
         <div className="search-result">
-          {tracks.length > 0 && tracks.map((track) => <SongResult key={track.id} track={track} />)}
+          <h2>Resultados</h2>
+          {tracks.length > 0 && tracks.map((track) => <TrackResult key={track.id} track={track} onAddTrackToPlaylist={addTrackToPlaylist} />)}
         </div>
 
         <div className="my-repository">
           <div className="repository-container">
-            <button>Save repository</button>
-
-            <div className='song-container'>
-              <div className="song-card">
-                <div className="song-details">
-                  <h3>Song's name</h3>
-                  <p>Artist's name</p>
-                </div>
-                <IoIosAddCircleOutline className="add-icon" />
-              </div>
-              <hr />
-            </div>
-
+            <input type="text" className="playlist-name" />
+            <button>Salvar playlist</button>
+            {playlistTracks.length > 0 && playlistTracks.map((track) => <PlaylistTracks key={track.id} track={track} />) }
           </div>
         </div>
 
