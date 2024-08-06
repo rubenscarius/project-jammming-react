@@ -23,6 +23,10 @@ function App() {
 
   const [playlistTracks, setPlaylistTracks] = useState([]); // State for add tracks to user playlist
 
+  const [playlistName, setPlaylistName] = useState(''); // Playlist name get in the input
+
+  const [playlistID, setPlaylistID] = useState(''); // Set playlist ID
+
   // Verified if user is logged in Spotify. If not, call functions to get access 
   // useEffect is used for render just once
   useEffect(() => {
@@ -64,6 +68,7 @@ function App() {
     params.append("response_type", "code");
     params.append("redirect_uri", "http://localhost:5173/callback");
     params.append("scope", "user-read-private user-read-email");
+    params.append("scope", "playlist-modify-public playlist-modify-private");
     params.append("code_challenge_method", "S256");
     params.append("code_challenge", challenge);
 
@@ -122,6 +127,71 @@ function App() {
     setTracks(data.tracks.items)
   }
 
+  // Function for create Playlist
+  async function createPlaylist(playlistName, userID, token) {
+
+    const response = await fetch(`https://api.spotify.com/v1/users/${userID}/playlists`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name: playlistName })
+    });
+
+    const data = await response.json();
+    const playlistID = await data.id;
+    setPlaylistID(playlistID);
+
+  };
+
+  // Add items in new Playlist
+  async function addItemsToPlaylist() {
+    const playlistTrackUri = playlistTracks.map((item) => item.uri);
+    console.log(playlistTrackUri);
+    
+    const response = await fetch(`https://api.spotify.com/v1/playlists/${playlistID}/tracks`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 'uris': playlistTrackUri })
+    })
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('Itens adicionados com sucesso:', data);
+    } else {
+      console.error('Erro ao adicionar itens:', response.status, await response.text());
+    }
+
+    setPlaylistName('');
+    setPlaylistID('');
+    setPlaylistTracks([]);
+    
+  }
+
+  // Function for get input value
+  async function handleInputGetPlaylistName(event) {
+    setPlaylistName(event.target.value);
+  }
+
+  // Call the createPlaylist function - button handler
+  async function handleButton(playlistName, userID, token) {
+    if (playlistName !== '') {
+      createPlaylist(playlistName, userID, token);
+    } else {
+      alert('Nome da playlist vazio. Dê um nome para sua playlist.');
+    }
+  }
+
+  // Call addItemsToPlaylist - button handler
+  async function handleSavePlaylistButton() {
+    if (playlistName !== '') {
+      addItemsToPlaylist();
+    } else {
+      alert('Não existe playlist criada.');
+    }
+  }
+
   // Function for handling submit form search and call fetchSpotifyData()
   async function handleSubmit(e, search) {
     e.preventDefault();
@@ -138,6 +208,14 @@ function App() {
     setPlaylistTracks((prevTracks) => [...prevTracks, track])
   };
 
+  async function removeTrackFromPlaylist(id) {
+    const newTracks = [...playlistTracks];
+    const filteredTracks = newTracks.filter((track) => track.id !== id ? track : null);
+    setPlaylistTracks(filteredTracks);
+  };
+
+  // Compare tracks add to playlist to tracks results and return not match tracks
+  const resultCompare = tracks.filter(item => {return !playlistTracks.some(item2 => item2.id == item.id)} )
 
   return (
     <div className="container">
@@ -151,14 +229,17 @@ function App() {
 
         <div className="search-result">
           <h2>Resultados</h2>
-          {tracks.length > 0 && tracks.map((track) => <TrackResult key={track.id} track={track} onAddTrackToPlaylist={addTrackToPlaylist} />)}
+          {tracks.length > 0 && resultCompare.map((track) => <TrackResult key={track.id} track={track} onAddTrackToPlaylist={addTrackToPlaylist} /> )}
         </div>
 
         <div className="my-repository">
           <div className="repository-container">
-            <input type="text" className="playlist-name" />
-            <button>Salvar playlist</button>
-            {playlistTracks.length > 0 && playlistTracks.map((track) => <PlaylistTracks key={track.id} track={track} />) }
+            <div className="create-playlist">
+              <input type="text" className="playlist-name" value={playlistName} onChange={handleInputGetPlaylistName} placeholder='Playlist Name' />
+              <button className="create-playlist-button" onClick={() => handleButton(playlistName, userID, token)}>Criar Playlist</button>
+            </div>
+            <button onClick={() => { handleSavePlaylistButton() }}>Salvar playlist</button>
+            {playlistTracks.length > 0 && playlistTracks.map((track) => <PlaylistTracks key={track.id} track={track} onRemoveTrackFromPlaylist={removeTrackFromPlaylist} />)}
           </div>
         </div>
 
